@@ -1261,6 +1261,62 @@ UINT CTrafficMonitorDlg::MonitorThreadCallback(LPVOID dwUser)
             plugin_info.plugin->OnMonitorInfo(monitor_info);
         }
     }
+    
+    // 加日志
+    if (theApp.m_debug_log)
+    {
+        CString log_info , base_info, traffic_info,cpu_info,memory_info, temperature_info, temp;
+        traffic_info.Format(_T("%s: %s (%s: %s/%s: %s)"), CCommon::LoadText(IDS_TRAFFIC_USED_TODAY),
+            CCommon::KBytesToString((theApp.m_today_up_traffic + theApp.m_today_down_traffic) / 1024u),
+            CCommon::LoadText(IDS_UPLOAD), CCommon::KBytesToString(theApp.m_today_up_traffic / 1024u),
+            CCommon::LoadText(IDS_DOWNLOAD), CCommon::KBytesToString(theApp.m_today_down_traffic / 1024u)
+        );
+        cpu_info.Format(_T("%s: %d %%\t"), CCommon::LoadText(IDS_CPU_USAGE), theApp.m_cpu_usage);
+        base_info += cpu_info;
+
+        if (theApp.m_general_data.IsHardwareEnable(HI_GPU) && theApp.m_gpu_usage >= 0)
+        {
+            temp.Format(_T("%s: %d %%\t"), CCommon::LoadText(IDS_GPU_USAGE), theApp.m_gpu_usage);
+            base_info += temp;
+        }
+
+        memory_info.Format(_T("%s: %s/%s\t\t"), CCommon::LoadText(IDS_MEMORY_USAGE),
+            CCommon::KBytesToString(theApp.m_used_memory),
+            CCommon::KBytesToString(theApp.m_total_memory));
+        base_info += memory_info;
+
+        if (theApp.m_general_data.IsHardwareEnable(HI_HDD) && theApp.m_hdd_usage >= 0)
+        {
+            temp.Format(_T("%s: %d %%\t"), CCommon::LoadText(IDS_HDD_USAGE), theApp.m_hdd_usage);
+            base_info += temp;
+        }
+        // 温度信息
+        if (theApp.m_general_data.IsHardwareEnable(HI_CPU) && theApp.m_cpu_temperature > 0)
+        {
+            temp.Format(_T("%s: %s\t"), CCommon::LoadText(IDS_CPU_TEMPERATURE), CCommon::TemperatureToString(theApp.m_cpu_temperature, theApp.m_main_wnd_data));
+            temperature_info += temp;
+        }
+        if (theApp.m_general_data.IsHardwareEnable(HI_GPU) && theApp.m_gpu_temperature > 0)
+        {
+            temp.Format(_T("%s: %s\t"), CCommon::LoadText(IDS_GPU_TEMPERATURE), CCommon::TemperatureToString(theApp.m_gpu_temperature, theApp.m_main_wnd_data));
+            temperature_info += temp;
+        }
+        if (theApp.m_general_data.IsHardwareEnable(HI_HDD) && theApp.m_hdd_temperature > 0)
+        {
+            temp.Format(_T("%s: %s\t"), CCommon::LoadText(IDS_HDD_TEMPERATURE), CCommon::TemperatureToString(theApp.m_hdd_temperature, theApp.m_main_wnd_data));
+            temperature_info += temp;
+        }
+        if (theApp.m_general_data.IsHardwareEnable(HI_MBD) && theApp.m_main_board_temperature > 0)
+        {
+            temp.Format(_T("%s: %s\t"), CCommon::LoadText(IDS_MAINBOARD_TEMPERATURE), CCommon::TemperatureToString(theApp.m_main_board_temperature, theApp.m_main_wnd_data));
+            temperature_info += temp;
+        }
+
+        log_info += base_info;
+        log_info += temperature_info;
+        log_info += traffic_info;
+        CCommon::WriteLog(log_info, (theApp.m_config_dir + L".\\Monitor.log").c_str());
+    }
 
     //}
     pThis->m_monitor_time_cnt++;
